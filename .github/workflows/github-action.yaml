@@ -28,7 +28,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
         with:
-          images: tryoo0607/pod-lifecycle-test
+          images: tryoo0607/coldbrew-scheduler
           flavor: |
             latest=false
           tags: |
@@ -59,7 +59,7 @@ jobs:
         with:
           username: ${{ env.DOCKERHUB_USERNAME }}
           password: ${{ env.DOCKERHUB_TOKEN }}
-          repository: tryoo0607/pod-lifecycle-test          # 본인 리포로 변경
+          repository: tryoo0607/coldbrew-scheduler          # 본인 리포로 변경
           enable-url-completion: true                       # README 내부 상대링크 보정(옵션)
           # readme-filepath: ./docs/README.md               # 루트가 아니면 경로 지정
           
