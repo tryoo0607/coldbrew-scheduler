@@ -2,7 +2,7 @@
 
 # syntax=docker/dockerfile:1
 
-FROM golang:1.24 AS builder
+FROM golang:1.25.0 AS builder
 WORKDIR /app
 
 ENV GO111MODULE=on \
@@ -19,13 +19,13 @@ RUN go mod download
 # 앱 소스
 COPY . .
 
-RUN go build -trimpath -ldflags="-s -w" -o /pod-lifecycle-test-build .
+RUN go build -trimpath -ldflags="-s -w" -o /coldbrew-scheduler-build .
 
 ############## RUN ##############
-# FROM scratch
-FROM busybox:1.36
+FROM scratch
+# FROM busybox:1.36
 
 WORKDIR /
-COPY --from=builder /pod-lifecycle-test-build /pod-lifecycle-test
+COPY --from=builder /coldbrew-scheduler-build /coldbrew-scheduler
 
-ENTRYPOINT ["/pod-lifecycle-test"]
+ENTRYPOINT ["/coldbrew-scheduler"]
