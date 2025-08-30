@@ -19,3 +19,6 @@ node_modules/
 
 # Dockerfile 빌드 시 포함시키려면 주석 처리
 docker/Dockerfile
+
+# Kubernetes Manifests
+k8s/
