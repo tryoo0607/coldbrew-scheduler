@@ -19,7 +19,7 @@ RUN go mod download
 # 앱 소스
 COPY . .
 
-RUN go build -trimpath -ldflags="-s -w" -o /coldbrew-scheduler-build .
+RUN go build -trimpath -ldflags="-s -w" -o /coldbrew-scheduler-build ./cmd/entrypoint
 
 ############## RUN ##############
 FROM scratch
