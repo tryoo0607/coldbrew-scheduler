@@ -1,6 +1,9 @@
 ## 패키지 구조
 [golang-standards/project-layout](https://github.com/golang-standards/project-layout/blob/master/README_ko.md)
 
+## Naming Convention
+[Go Style Decisions](https://google.github.io/styleguide/go/decisions.html)
+
 ## ENV 만들기
 [Go/Golang Configuration](https://syntaxsugar.tistory.com/entry/Golang-Configuration)
 
@@ -18,6 +21,12 @@
 
 ## Logging
 [A Comprehensive Guide to Zap Logging in Go](https://betterstack.com/community/guides/logging/go/zap/)
+
+[Go/Golang Configuration](https://appmaster.io/ko/blog/zap-rogeoro-idong-ganghwa)
+
+[golang logging을 위한 zap 사용 방법을 알아보자](https://velog.io/@chappi/golang-logging%EC%9D%84-%EC%9C%84%ED%95%9C-zap-%EC%82%AC%EC%9A%A9-%EB%B0%A9%EB%B2%95%EC%9D%84-%EC%95%8C%EC%95%84%EB%B3%B4%EC%9E%90)
+
+[Building a Logger Wrapper in Go with Support for Multiple Logging Libraries](https://medium.com/@ansujain/building-a-logger-wrapper-in-go-with-support-for-multiple-logging-libraries-48092b826bee)
 
 [golang에서 사용 경험이 좋았던 패키지들](https://simplear.tistory.com/48)
 
@@ -61,3 +70,7 @@
 
 ## Panic Handling
 [Panic handling in Golang](https://hsleep.medium.com/panic-handling-in-golang-4491923ae4c2)
+
+
+# interface
+[Golang Interface 최적화: 인터페이스 불필요한 추상화 피하고 테스트 용이성 높이기](https://slooowin.com/18)
