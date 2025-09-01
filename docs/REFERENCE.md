@@ -72,5 +72,8 @@
 [Panic handling in Golang](https://hsleep.medium.com/panic-handling-in-golang-4491923ae4c2)
 
 
-# interface
+## interface
 [Golang Interface 최적화: 인터페이스 불필요한 추상화 피하고 테스트 용이성 높이기](https://slooowin.com/18)
+
+## Context
+[Fix "should not use basic type string as key in context.WithValue" golint](https://stackoverflow.com/questions/40891345/fix-should-not-use-basic-type-string-as-key-in-context-withvalue-golint)
