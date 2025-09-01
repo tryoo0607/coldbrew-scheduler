@@ -7,52 +7,78 @@ import (
 )
 
 type ZapLogger struct {
- logger *zap.Logger
- ctx    context.Context
+	l *zap.Logger
 }
 
-func NewZapLogger(loggerType string, ctx context.Context) *ZapLogger {
- logger, _ := zap.NewProduction()
+func NewZapLogger() *ZapLogger {
+	logger, _ := zap.NewProduction()
 
- return &ZapLogger{logger: logger, ctx: ctx}
+	return &ZapLogger{l: logger}
 }
 
-func (l *ZapLogger) Debug(msg string, fields map[string]interface{}) {
- l.addContextCommonFields(fields)
-
- l.logger.Debug("", zap.Any("args", fields))
+// 공통 필드를 바인딩한 "자식 로거" 반환
+func (z *ZapLogger) With(f Fields) Logger {
+	if len(f) == 0 {
+		return z
+	}
+	return &ZapLogger{l: z.l.With(toFields(f)...)}
 }
 
-func (l *ZapLogger) Info(msg string, fields map[string]interface{}) {
- l.addContextCommonFields(fields)
+func (z *ZapLogger) Debug(ctx context.Context, msg string, f Fields) { z.log(ctx, z.l.Debug, msg, f) }
+func (z *ZapLogger) Info(ctx context.Context, msg string, f Fields)  { z.log(ctx, z.l.Info, msg, f) }
+func (z *ZapLogger) Warn(ctx context.Context, msg string, f Fields)  { z.log(ctx, z.l.Warn, msg, f) }
+func (z *ZapLogger) Error(ctx context.Context, msg string, f Fields) { z.log(ctx, z.l.Error, msg, f) }
+func (z *ZapLogger) Fatal(ctx context.Context, msg string, f Fields) { z.log(ctx, z.l.Fatal, msg, f) }
+func (z *ZapLogger) Sync() error                                     { return z.l.Sync() }
 
- l.logger.Info("", zap.Any("args", fields))
+func (z *ZapLogger) log(ctx context.Context, fn func(string, ...zap.Field), msg string, f Fields) {
+	cf := fieldsFromCtx(ctx)
+	merged := merge(cf, f) // nil 안전, 얕은 복사-병합
+	if len(merged) == 0 {
+		fn(msg)
+		return
+	}
+	fn(msg, toFields(merged)...)
 }
 
-func (l *ZapLogger) Warn(msg string, fields map[string]interface{}) {
- l.addContextCommonFields(fields)
-
- l.logger.Warn("", zap.Any("args", fields))
+func toFields(m Fields) []zap.Field {
+	if len(m) == 0 {
+		return nil
+	}
+	fs := make([]zap.Field, 0, len(m))
+	for k, v := range m {
+		fs = append(fs, zap.Any(k, v))
+	}
+	return fs
 }
 
-func (l *ZapLogger) Error(msg string, fields map[string]interface{}) {
- l.addContextCommonFields(fields)
-
- l.logger.Error("", zap.Any("args", fields))
+func merge(a, b Fields) Fields {
+	if len(a) == 0 && len(b) == 0 {
+		return nil
+	}
+	if len(a) == 0 {
+		return copyFields(b)
+	}
+	if len(b) == 0 {
+		return copyFields(a)
+	}
+	out := make(Fields, len(a)+len(b))
+	for k, v := range a {
+		out[k] = v
+	}
+	for k, v := range b {
+		out[k] = v
+	} // b가 a를 덮어씀
+	return out
 }
 
-func (l *ZapLogger) Fatal(msg string, fields map[string]interface{}) {
- l.addContextCommonFields(fields)
-
- l.logger.Fatal("", zap.Any("args", fields))
-}
-
-func (l *ZapLogger) addContextCommonFields(fields map[string]interface{}) {
- if l.ctx != nil {
-  for k, v := range l.ctx.Value("commonFields").(map[string]interface{}) {
-   if _, ok := fields[k]; !ok {
-    fields[k] = v
-   }
-  }
- }
+func copyFields(m Fields) Fields {
+	if len(m) == 0 {
+		return nil
+	}
+	out := make(Fields, len(m))
+	for k, v := range m {
+		out[k] = v
+	}
+	return out
 }
