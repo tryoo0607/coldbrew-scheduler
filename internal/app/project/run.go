@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/tryoo0607/coldbrew-scheduler/internal/app/finder"
 	"github.com/tryoo0607/coldbrew-scheduler/internal/app/scheduler"
 	clientk8s "github.com/tryoo0607/coldbrew-scheduler/internal/pkg/clientgo/k8s"
 	"golang.org/x/sync/errgroup"
@@ -30,7 +31,7 @@ func Run(ctx context.Context, options ProjectOptions) error {
 
 	g.Go(func() error {
 
-		return scheduler.Run(ctx, clientset)
+		return scheduler.Run(ctx, clientset, finder.FindBestNode)
 	})
 
 	if err := g.Wait(); err != nil && err != http.ErrServerClosed {
