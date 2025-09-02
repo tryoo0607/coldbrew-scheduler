@@ -20,7 +20,7 @@ type Controller struct {
 	find             FinderFunc
 	toPodInfo        func(*corev1.Pod) api.PodInfo
 	bind             func(binder.BindOptions) error
-	newListerWatcher func(kubernetes.Interface, string) cache.ListerWatcher
+	newListerWatcher func(kubernetes.Interface) cache.ListerWatcher
 }
 
 func NewPodInformer(ctx context.Context, clientset kubernetes.Interface, find FinderFunc) cache.Controller {
@@ -41,7 +41,7 @@ func NewPodInformer(ctx context.Context, clientset kubernetes.Interface, find Fi
 }
 
 func (c *Controller) buildInformerOptions() cache.InformerOptions {
-	lw := c.newListerWatcher(c.clientset, api.ResourcePods)
+	lw := c.newListerWatcher(c.clientset)
 	return cache.InformerOptions{
 		ListerWatcher: lw,
 		ObjectType:    &corev1.Pod{},
