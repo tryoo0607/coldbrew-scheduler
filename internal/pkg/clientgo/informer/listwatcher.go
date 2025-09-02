@@ -4,12 +4,12 @@ import (
 	"context"
 
 	"github.com/tryoo0607/coldbrew-scheduler/internal/pkg/clientgo/api"
+	clientk8s "github.com/tryoo0607/coldbrew-scheduler/internal/pkg/clientgo/k8s"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -20,7 +20,7 @@ func newListWatcher(clientset kubernetes.Interface) cache.ListerWatcher {
 		fields.OneTermEqualSelector(api.SpecNodeName, ""),
 	)
 
-	if IsFakeClient(clientset) {
+	if clientk8s.IsFakeClient(clientset) {
 
 		return newFakeListWatcher(clientset, selector)
 	}
@@ -37,11 +37,6 @@ func newListWatcher(clientset kubernetes.Interface) cache.ListerWatcher {
 	)
 
 	return listWatcher
-}
-
-func IsFakeClient(clientset kubernetes.Interface) bool {
-	_, ok := clientset.(*fake.Clientset)
-	return ok
 }
 
 // Fake Client에는 RestClient()가 없기 때문에 NewListWatchFromClient()를 사용할 수 없음

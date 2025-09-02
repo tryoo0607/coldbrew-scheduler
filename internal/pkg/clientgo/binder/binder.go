@@ -5,8 +5,8 @@ import (
 	"errors"
 
 	"github.com/tryoo0607/coldbrew-scheduler/internal/pkg/clientgo/api"
+	clientk8s "github.com/tryoo0607/coldbrew-scheduler/internal/pkg/clientgo/k8s"
 	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -18,22 +18,30 @@ type BindOptions struct {
 	NodeName  string
 }
 
-func BindPodToNode(options BindOptions) error {
-	if options.Ctx == nil {
-		options.Ctx = context.Background()
+func BindPodToNode(opt BindOptions) error {
+	if opt.Ctx == nil {
+		opt.Ctx = context.Background()
 	}
-	if options.ClientSet == nil || options.Pod == nil || options.NodeName == "" {
+
+	if opt.ClientSet == nil || opt.Pod == nil || opt.NodeName == "" {
+
 		return errors.New("invalid binder options")
 	}
 
-	if err := bindViaSubresource(options); err != nil {
+	// 1) 서브리소스 먼저 시도 (실클러스터 권장)
+	if err := bindViaSubresource(opt); err == nil {
 
-		if apierrors.IsForbidden(err) || apierrors.IsMethodNotSupported(err) {
-			return bindBySpecNodeName(options)
+		// fakeClient에서는 Pods().Bind()가 성공해도 아무것도 Update하지 않음
+		// 때문에 아래 로직 실행하도록 로직 추가
+		if clientk8s.IsFakeClient(opt.ClientSet) {
+			return bindBySpecNodeName(opt)
 		}
-		return err
+
+		return nil
 	}
-	return nil
+
+	// 2) 폴백: spec.nodeName 업데이트 (fake에서도 동작)
+	return bindBySpecNodeName(opt)
 }
 
 func bindViaSubresource(options BindOptions) error {
@@ -46,7 +54,7 @@ func bindViaSubresource(options BindOptions) error {
 			UID:       pod.UID,
 		},
 		Target: corev1.ObjectReference{
-			Kind:       api.ResourcePods,
+			Kind:       api.ResourceNode,
 			APIVersion: api.V1,
 			Name:       options.NodeName,
 		},
