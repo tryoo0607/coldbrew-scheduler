@@ -122,3 +122,11 @@
 ## Binding
 [[k8s] Scheduling, Binding 개념](https://successisnotfaraway.tistory.com/94)
 [Custom Pod Scheduling](https://devops-colleague.tistory.com/75)
+
+
+## ErrorGroup
+[golang - errgroup](https://kyh0703.github.io/golang/post-golang-errgroup/)
+
+[ErrGroup: Go의 숨겨진 보석, 동시성 프로그래밍](https://leapcell.io/blog/ko/errgroup-goeui-hideun-gem-foyeo-dongsieong-peurogeuraeming)
+
+[errgroup으로 goroutine 10배 잘 활용하기](https://devjin-blog.com/golang-errgroup-goroutine/)

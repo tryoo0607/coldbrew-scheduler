@@ -10,4 +10,7 @@ go get -u go.uber.org/zap
 go get k8s.io/client-go
 go get k8s.io/apimachinery
 go get k8s.io/api
+
+# Error Handling
+go get golang.org/x/sync@latest
 ```
