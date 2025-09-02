@@ -52,5 +52,22 @@
 - interface 정의 + 별도 패키지 분리하는 방식으로 고려 중 
 
 
-# 인터페이스 사용
-- 
+## kubernetes 관련 Package
+```
+Kubernetes API
+   ↑
+client-go
+   ↑
+controller-runtime
+   ↑
+kubebuilder
+```
+- k8s는 내부적으로도 client-go를 사용함
+- controller-runtime은 go로 kuernetes 개발을 좀 더 용이하게 해주는 추상화 패키지
+    - client-go 위에 하나 레이어 더 얹은 것
+
+
+## Informer(정적) vs Dynamic Informer
+- Dynamic => 리소스의 스키마를 몰라도 감시가 가능한 범용 인포머
+- CRD 등을 감시할 때 주로 사용
+- but scheduler에선 목적과 대상이 Pod이므로 Informer로 구현하기

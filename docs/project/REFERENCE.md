@@ -79,6 +79,46 @@
 [Fix "should not use basic type string as key in context.WithValue" golint](https://stackoverflow.com/questions/40891345/fix-should-not-use-basic-type-string-as-key-in-context-withvalue-golint)
 
 
-## client-go
+## kubernetes client
+[Writing Your First Kubernetes Client in Go: List Pods Like a Pro](https://medium.com/@dhruvbhl/writing-your-first-kubernetes-client-in-go-list-pods-like-a-pro-6955d8a9792f)
 
-## fake client
+[Go / Client-go](https://velog.io/@sawa1989/Go-Client-go)
+
+[How to write simple tests for client-go using a fake client?](https://stackoverflow.com/questions/57833499/how-to-write-simple-tests-for-client-go-using-a-fake-client)
+
+[client-go 와 controller-runtime의 관계](https://devops-colleague.tistory.com/97)
+
+[Creating a Custom Scheduler in Kubernetes: A Practical Guide](https://overcast.blog/creating-a-custom-scheduler-in-kubernetes-a-practical-guide-2d9f9254f3b5)
+
+
+## Scheduler
+[[Watch API] kube-scheduler 가 API server를 모니터링하는 방식](https://growing-dev.tistory.com/541)
+[How does the Kubernetes API server start a newly scheduled pod on a node?](https://stackoverflow.com/questions/64260771/how-does-the-kubernetes-api-server-start-a-newly-scheduled-pod-on-a-node)
+
+[Scheduling Framework](https://kubernetes.io/docs/concepts/scheduling-eviction/scheduling-framework/)
+
+[KEP-3521: Pod Scheduling Readiness](https://github.com/kubernetes/enhancements/tree/master/keps/sig-scheduling/3521-pod-scheduling-readiness)
+
+[](https://github.com/kubernetes/kubernetes/tree/master/pkg/scheduler)
+
+[A Brief Analysis on the Implementation of the Kubernetes Scheduler](https://www.alibabacloud.com/blog/a-brief-analysis-on-the-implementation-of-the-kubernetes-scheduler_595083)
+
+[Kubernetes scheduler 동작](https://velog.io/@landau/Kubernetes-scheduler-%EB%8F%99%EC%9E%91)
+
+
+## Informer
+[쿠버네티스 이해하기: watcher vs informer](https://juhyungson.com/blog/-watcher-vs-informer)
+
+[Go: Creating Dynamic Kubernetes Informers](https://dev.to/davidsbond/go-creating-dynamic-kubernetes-informers-1npi)
+
+[kubernetes Dynamic informers with client-go](https://inspirit941.tistory.com/485)
+
+[Kubernetes Informers: A Practical Guide for DevOps](https://www.plural.sh/blog/manage-kubernetes-events-informers/)
+
+[client-go의 Reflector와 Watcher의 차이?](https://devops-colleague.tistory.com/26)
+
+[Understanding client-go listers and reflectors in the context of cluster-autoscaler](https://vadasambar.com/post/kubernetes/understanding-listers-and-reflectors-in-client-go/)
+
+## Binding
+[[k8s] Scheduling, Binding 개념](https://successisnotfaraway.tistory.com/94)
+[Custom Pod Scheduling](https://devops-colleague.tistory.com/75)
