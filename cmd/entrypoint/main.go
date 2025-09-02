@@ -1,19 +1,24 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"os/signal"
+	"syscall"
 
-	project "github.com/tryoo0607/coldbrew-scheduler/cmd/internal"
+	"github.com/tryoo0607/coldbrew-scheduler/internal/app/project"
 	"github.com/tryoo0607/coldbrew-scheduler/internal/config"
 	"github.com/tryoo0607/coldbrew-scheduler/internal/pkg/log"
 )
 
-// TODO. [TR-YOO] 초기 구성잡기
 func main() {
 	fmt.Println("init")
 
 	// Load Config
 	cfg, err := config.Load()
+
+	// TODO. [TR-YOO] config 사용하게되면 지우기
+	_ = cfg
 
 	if err != nil {
 
@@ -24,5 +29,12 @@ func main() {
 	defer logger.Sync()
 
 	// Run
-	project.Run(cfg, logger)
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	project.Run(ctx, project.ProjectOptions{
+		Kubeconfig: "",
+		UseFake:    true,
+		InCluster:  false,
+	})
 }
