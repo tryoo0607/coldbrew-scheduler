@@ -22,3 +22,6 @@ docker/Dockerfile
 
 # Kubernetes Manifests
 k8s/
+
+# Docs
+docs/
