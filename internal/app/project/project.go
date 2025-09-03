@@ -9,9 +9,6 @@ import (
 	"github.com/tryoo0607/coldbrew-scheduler/internal/app/scheduler"
 	clientk8s "github.com/tryoo0607/coldbrew-scheduler/internal/pkg/clientgo/k8s"
 	"golang.org/x/sync/errgroup"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 type ProjectOptions struct {
@@ -22,7 +19,9 @@ type ProjectOptions struct {
 
 func Run(ctx context.Context, options ProjectOptions) error {
 
-	clientset, err := buildClientset(options)
+	convertedOpts := toOptions(options)
+
+	clientset, err := clientk8s.BuildClientset(convertedOpts)
 	if err != nil {
 		return fmt.Errorf("k8s: %w", err)
 	}
@@ -41,21 +40,11 @@ func Run(ctx context.Context, options ProjectOptions) error {
 	return nil
 }
 
-func buildClientset(opt ProjectOptions) (kubernetes.Interface, error) {
-	switch {
-	case opt.UseFake:
-		return clientk8s.NewFakeClient(), nil
-	case opt.InCluster:
-		cfg, err := rest.InClusterConfig()
-		if err != nil {
-			return nil, err
-		}
-		return kubernetes.NewForConfig(cfg)
-	default:
-		cfg, err := clientcmd.BuildConfigFromFlags("", clientk8s.ResolveKubeconfigPath(opt.Kubeconfig))
-		if err != nil {
-			return nil, err
-		}
-		return kubernetes.NewForConfig(cfg)
+func toOptions(opts ProjectOptions) clientk8s.Options {
+
+	return clientk8s.Options{
+		Kubeconfig: opts.Kubeconfig,
+		UseFake:    opts.UseFake,
+		InCluster:  opts.InCluster,
 	}
 }
