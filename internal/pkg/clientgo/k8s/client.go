@@ -8,11 +8,6 @@ import (
 	fake "k8s.io/client-go/kubernetes/fake"
 )
 
-func NewFakeClient() kubernetes.Interface {
-
-	return fake.NewClientset()
-}
-
 func IsFakeClient(clientset kubernetes.Interface) bool {
 	_, ok := clientset.(*fake.Clientset)
 	return ok
