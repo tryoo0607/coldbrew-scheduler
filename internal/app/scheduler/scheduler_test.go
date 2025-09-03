@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/tryoo0607/coldbrew-scheduler/internal/app/scheduler"
+	"github.com/tryoo0607/coldbrew-scheduler/internal/pkg/clientgo"
 	"github.com/tryoo0607/coldbrew-scheduler/internal/pkg/clientgo/api"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -68,7 +69,8 @@ func startScheduler(
 	t.Helper()
 	done := make(chan error, 1)
 	go func() {
-		err := scheduler.Run(ctx, cs, find)
+		cli := clientgo.NewWithClientset(cs)
+		err := scheduler.Run(ctx, cli, find)
 		done <- err
 	}()
 	return done
