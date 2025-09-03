@@ -18,7 +18,7 @@ type Controller struct {
 	ctx              context.Context
 	clientset        kubernetes.Interface
 	find             FinderFunc
-	toPodInfo        func(*corev1.Pod) api.PodInfo
+	toPodInfo        func(*corev1.Pod) (api.PodInfo, error)
 	bind             func(binder.BindOptions) error
 	newListerWatcher func(kubernetes.Interface) cache.ListerWatcher
 }
@@ -61,7 +61,12 @@ func (c *Controller) onAdd(obj interface{}) {
 }
 
 func (c *Controller) schedulePod(pod *corev1.Pod) {
-	pi := c.toPodInfo(pod)
+
+	pi, err := c.toPodInfo(pod)
+	if err != nil {
+		fmt.Printf("Convert Pod to PodInfo  error for %s/%s: %v\n", pod.Namespace, pod.Name, err)
+		return
+	}
 
 	node, err := c.find(pi)
 	if err != nil {
