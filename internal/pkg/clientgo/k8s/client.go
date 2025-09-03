@@ -1,4 +1,4 @@
-package clientgo
+package k8s
 
 import (
 	"os"
