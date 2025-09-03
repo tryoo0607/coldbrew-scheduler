@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/tryoo0607/coldbrew-scheduler/internal/pkg/clientgo/api"
-	clientk8s "github.com/tryoo0607/coldbrew-scheduler/internal/pkg/clientgo/k8s"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -20,23 +19,23 @@ func newListWatcher(clientset kubernetes.Interface) cache.ListerWatcher {
 		fields.OneTermEqualSelector(api.SpecNodeName, ""),
 	)
 
-	if clientk8s.IsFakeClient(clientset) {
+	if rc := clientset.CoreV1().RESTClient(); rc != nil {
 
-		return newFakeListWatcher(clientset, selector)
+		// 특정 대상에 대한 List를 watch하는데 사용
+		listWatcher := cache.NewListWatchFromClient(
+			rc,
+			// 대상 리소스
+			api.ResourcePods,
+			// 대상 Namespace
+			metav1.NamespaceAll,
+			// 필드 셀렉터 => 해당 필드와 값을 비교해여 Equal인 것들만 필터링
+			selector,
+		)
+
+		return listWatcher
 	}
 
-	// 특정 대상에 대한 List를 watch하는데 사용
-	listWatcher := cache.NewListWatchFromClient(
-		clientset.CoreV1().RESTClient(),
-		// 대상 리소스
-		api.ResourcePods,
-		// 대상 Namespace
-		metav1.NamespaceAll,
-		// 필드 셀렉터 => 해당 필드와 값을 비교해여 Equal인 것들만 필터링
-		selector,
-	)
-
-	return listWatcher
+	return newFakeListWatcher(clientset, selector)
 }
 
 // Fake Client에는 RestClient()가 없기 때문에 NewListWatchFromClient()를 사용할 수 없음

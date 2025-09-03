@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"github.com/tryoo0607/coldbrew-scheduler/internal/pkg/clientgo/api"
-	clientk8s "github.com/tryoo0607/coldbrew-scheduler/internal/pkg/clientgo/k8s"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -33,8 +32,12 @@ func BindPodToNode(opt BindOptions) error {
 
 		// fakeClient에서는 Pods().Bind()가 성공해도 아무것도 Update하지 않음
 		// 때문에 아래 로직 실행하도록 로직 추가
-		if clientk8s.IsFakeClient(opt.ClientSet) {
-			return bindBySpecNodeName(opt)
+		if err := bindViaSubresource(opt); err == nil {
+			// fake에선 no-op일 수 있으니 실제로 묶였는지 확인
+			ok, _ := isBound(opt)
+			if ok {
+				return nil
+			}
 		}
 
 		return nil
@@ -74,4 +77,13 @@ func bindBySpecNodeName(options BindOptions) error {
 	_, err := clientset.CoreV1().Pods(pod.Namespace).Update(context.Background(), pod, metav1.UpdateOptions{})
 
 	return err
+}
+
+func isBound(opt BindOptions) (bool, error) {
+	p, err := opt.ClientSet.CoreV1().Pods(opt.Pod.Namespace).
+		Get(opt.Ctx, opt.Pod.Name, metav1.GetOptions{})
+	if err != nil {
+		return false, err
+	}
+	return p.Spec.NodeName == opt.NodeName, nil
 }

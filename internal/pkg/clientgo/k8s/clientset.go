@@ -2,8 +2,6 @@ package k8s
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
@@ -35,19 +33,4 @@ func NewClientsetFromKubeconfig(path string) (kubernetes.Interface, error) {
 // 테스트/로컬용 Fake Clientset
 func NewFakeClientset() kubernetes.Interface {
 	return fake.NewClientset()
-}
-
-// 내부 헬퍼: 기본 kubeconfig 경로 결정
-func resolveKubeconfigPath(p string) string {
-	if p != "" {
-		return p
-	}
-	if env := os.Getenv("KUBECONFIG"); env != "" {
-		return env
-	}
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return ""
-	}
-	return filepath.Join(home, ".kube", "config")
 }

@@ -8,12 +8,12 @@ import (
 	fake "k8s.io/client-go/kubernetes/fake"
 )
 
-func IsFakeClient(clientset kubernetes.Interface) bool {
+func isFakeClient(clientset kubernetes.Interface) bool {
 	_, ok := clientset.(*fake.Clientset)
 	return ok
 }
 
-func ResolveKubeconfigPath(kubeConfig string) string {
+func resolveKubeconfigPath(kubeConfig string) string {
 	// 1. CLI 플래그 우선
 	if kubeConfig != "" {
 		return kubeConfig
