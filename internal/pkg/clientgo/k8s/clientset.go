@@ -2,6 +2,8 @@ package k8s
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
@@ -9,57 +11,43 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-type Options struct {
-	Kubeconfig string
-	InCluster  bool
-	UseFake    bool
-}
-
-func BuildClientset(opt Options) (kubernetes.Interface, error) {
-
-	switch {
-	case opt.UseFake:
-		return newFakeClientset(), nil
-	case opt.InCluster:
-		return newInClusterClientset(opt)
-	default:
-		path := ResolveKubeconfigPath(opt.Kubeconfig)
-		return newKubeconfigClientset(opt, path)
+// 인클러스터용 Clientset
+func NewClientsetInCluster() (kubernetes.Interface, error) {
+	cfg, err := rest.InClusterConfig()
+	if err != nil {
+		return nil, fmt.Errorf("in-cluster config: %w", err)
 	}
+	return kubernetes.NewForConfig(cfg)
 }
 
-func newFakeClientset() kubernetes.Interface {
+// kubeconfig 경로 기반 Clientset (빈 문자열이면 기본 경로/환경변수 적용)
+func NewClientsetFromKubeconfig(path string) (kubernetes.Interface, error) {
+	if path == "" {
+		path = resolveKubeconfigPath("")
+	}
+	cfg, err := clientcmd.BuildConfigFromFlags("", path)
+	if err != nil {
+		return nil, fmt.Errorf("kubeconfig %q: %w", path, err)
+	}
+	return kubernetes.NewForConfig(cfg)
+}
 
+// 테스트/로컬용 Fake Clientset
+func NewFakeClientset() kubernetes.Interface {
 	return fake.NewClientset()
 }
 
-func newInClusterClientset(opt Options) (kubernetes.Interface, error) {
-
-	cfg, err := rest.InClusterConfig()
-
-	if err != nil {
-
-		return nil, err
+// 내부 헬퍼: 기본 kubeconfig 경로 결정
+func resolveKubeconfigPath(p string) string {
+	if p != "" {
+		return p
 	}
-
-	return newForConfig(cfg, opt)
-}
-
-func newKubeconfigClientset(opt Options, path string) (kubernetes.Interface, error) {
-
-	cfg, err := clientcmd.BuildConfigFromFlags("", path)
-
-	if err != nil {
-
-		return nil, fmt.Errorf("kubeconfig %q: %w", path, err)
+	if env := os.Getenv("KUBECONFIG"); env != "" {
+		return env
 	}
-
-	return newForConfig(cfg, opt)
-}
-
-func newForConfig(cfg *rest.Config, opt Options) (kubernetes.Interface, error) {
-
-	_ = opt
-
-	return kubernetes.NewForConfig(cfg)
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+	return filepath.Join(home, ".kube", "config")
 }

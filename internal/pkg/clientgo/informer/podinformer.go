@@ -12,18 +12,16 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-type FinderFunc func(api.PodInfo) (string, error)
-
 type Controller struct {
 	ctx              context.Context
 	clientset        kubernetes.Interface
-	find             FinderFunc
+	find             api.FinderFunc
 	toPodInfo        func(*corev1.Pod) (api.PodInfo, error)
 	bind             func(binder.BindOptions) error
 	newListerWatcher func(kubernetes.Interface) cache.ListerWatcher
 }
 
-func NewPodInformer(ctx context.Context, clientset kubernetes.Interface, find FinderFunc) cache.Controller {
+func NewPodInformer(ctx context.Context, clientset kubernetes.Interface, find api.FinderFunc) cache.Controller {
 	c := &Controller{
 		ctx:              ctx,
 		clientset:        clientset,

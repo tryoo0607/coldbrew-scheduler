@@ -3,13 +3,17 @@ package scheduler
 import (
 	"context"
 
-	"github.com/tryoo0607/coldbrew-scheduler/internal/pkg/clientgo/informer"
-	"k8s.io/client-go/kubernetes"
+	"github.com/tryoo0607/coldbrew-scheduler/internal/pkg/clientgo"
+	"github.com/tryoo0607/coldbrew-scheduler/internal/pkg/clientgo/api"
 )
 
-func Run(ctx context.Context, clientset kubernetes.Interface, find informer.FinderFunc) error {
+func Run(ctx context.Context, client clientgo.Client, find api.FinderFunc) error {
 
-	controller := informer.NewPodInformer(ctx, clientset, find)
+	controller, err := client.NewPodInformer(ctx, find)
+
+    if err != nil {
+        return err
+    }
 
 	stop := make(chan struct{})
 
