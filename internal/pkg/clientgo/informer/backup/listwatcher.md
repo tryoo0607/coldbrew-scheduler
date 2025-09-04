@@ -1,3 +1,6 @@
+# 범용 informer 사용 시 사용하는 ListWatcher
+
+```go
 package informer
 
 import (
@@ -52,3 +55,4 @@ func newFakeListWatcher(cs kubernetes.Interface, selector fields.Selector) cache
 		},
 	}
 }
+```

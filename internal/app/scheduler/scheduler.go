@@ -9,7 +9,7 @@ import (
 
 func Run(ctx context.Context, client clientgo.Client, find api.FinderFunc) error {
 
-	controller, err := client.NewPodInformer(ctx, find)
+	controller, err := client.NewPodController(ctx, find)
 
     if err != nil {
         return err

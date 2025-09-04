@@ -9,7 +9,6 @@ import (
 	"github.com/tryoo0607/coldbrew-scheduler/internal/pkg/clientgo/informer"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
 )
 
 // 파사드 패턴
@@ -25,8 +24,20 @@ func (c *client) ListNodeInfos(ctx context.Context) ([]api.NodeInfo, error) {
 	return adapter.ToNodeInfoList(nl)
 }
 
-func (c *client) NewPodInformer(ctx context.Context, find api.FinderFunc) (cache.Controller, error) {
-   
-    ctrl := informer.NewPodInformer(ctx, c.cs, find)
-    return ctrl, nil
+func (c *client) NewPodController(ctx context.Context, find api.FinderFunc) (Controller, error) {
+
+	factory := informer.NewInformerFactory(c.cs)
+
+	podInformer := factory.Core().V1().Pods()
+	nodeInformer := factory.Core().V1().Nodes()
+
+	ctrl := informer.NewPodController(
+		ctx,
+		c.cs,
+		podInformer,
+		nodeInformer.Lister(),
+		find,
+	)
+
+	return &controllerWrapper{ctrl}, nil
 }

@@ -9,74 +9,70 @@ import (
 	"github.com/tryoo0607/coldbrew-scheduler/internal/app/scheduler"
 	"github.com/tryoo0607/coldbrew-scheduler/internal/pkg/clientgo"
 	"github.com/tryoo0607/coldbrew-scheduler/internal/pkg/clientgo/api"
+	clientk8s "github.com/tryoo0607/coldbrew-scheduler/internal/pkg/clientgo/k8s"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/kubernetes/fake"
-	ktesting "k8s.io/client-go/testing"
+	"k8s.io/client-go/kubernetes"
 )
 
 func TestSchedulerBindsPod(t *testing.T) {
-	cs := fake.NewClientset()
+	// 1) 테스트용 파사드 + fake clientset 준비
+	cli, cs := newTestFacadeAndCS()
 
-	// ---- Reactors: binder 경로 추적용 --------------------------------------
-	cs.Fake.PrependReactor("create", "bindings",
-		func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
-			t.Log("[reactor] create bindings called")
-			// 기본 동작 계속 타게 false 반환 (fake는 보통 미구현 -> 실패 가능)
-			return false, nil, nil
-		})
-	cs.Fake.PrependReactor("update", "pods",
-		func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
-			t.Log("[reactor] update pods called (fallback path likely)")
-			return false, nil, nil
-		})
-
+	// 2) 컨텍스트 & 파인더
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
+	find := func(ctx context.Context, _ api.PodInfo, _ []api.NodeInfo) (string, error) {
+		return "node-a", nil
+	}
 
+	// 3) 스케줄러 실행
 	t.Log("→ start scheduler")
-	done := startScheduler(t, ctx, cs, fixedFinder("node-a"))
+	errCh := startScheduler(ctx, cli, find)
 
+	// 4) 테스트 리소스 준비
 	t.Log("→ ensure node")
 	ensureNode(t, ctx, cs, "node-a")
 
 	t.Log("→ create schedulable pod")
 	createSchedulablePod(t, ctx, cs, "default", "p1")
 
+	// 5) 바인딩 검증
 	t.Log("→ wait for binding")
 	waitForBinding(t, ctx, cs, "default", "p1", "node-a")
 
-	// 종료 유도 및 그레이스풀 종료 확인
+	// 6) 종료
 	t.Log("→ cancel & wait")
 	cancel()
-	<-done
+	<-errCh
 	t.Log("✓ done")
 }
 
-// --- Helpers -----------------------------------------------------------------
+/* ----------------------- Helpers ----------------------- */
 
-func fixedFinder(node string) func(api.PodInfo) (string, error) {
-	return func(api.PodInfo) (string, error) { return node, nil }
+// 테스트용 파사드 + fake clientset을 함께 반환
+func newTestFacadeAndCS() (clientgo.Client, kubernetes.Interface) {
+	cs := clientk8s.NewFakeClientset()
+	cli := clientgo.NewWithClientset(cs)
+	return cli, cs
 }
 
+// 스케줄러 실행 헬퍼
 func startScheduler(
-	t *testing.T,
 	ctx context.Context,
-	cs *fake.Clientset,
-	find func(api.PodInfo) (string, error),
+	cli clientgo.Client,
+	find api.FinderFunc,
 ) <-chan error {
-	t.Helper()
-	done := make(chan error, 1)
+	ch := make(chan error, 1)
 	go func() {
-		cli := clientgo.NewWithClientset(cs)
-		err := scheduler.Run(ctx, cli, find)
-		done <- err
+		ch <- scheduler.Run(ctx, cli, find)
 	}()
-	return done
+	return ch
 }
 
-func ensureNode(t *testing.T, ctx context.Context, cs *fake.Clientset, name string) {
+// 리소스 생성/검증 유틸은 그대로 사용
+func ensureNode(t *testing.T, ctx context.Context, cs kubernetes.Interface, name string) {
 	t.Helper()
 	_, err := cs.CoreV1().Nodes().Create(ctx, &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{Name: name},
@@ -86,7 +82,7 @@ func ensureNode(t *testing.T, ctx context.Context, cs *fake.Clientset, name stri
 	}
 }
 
-func createSchedulablePod(t *testing.T, ctx context.Context, cs *fake.Clientset, ns, name string) {
+func createSchedulablePod(t *testing.T, ctx context.Context, cs kubernetes.Interface, ns, name string) {
 	t.Helper()
 	_, err := cs.CoreV1().Pods(ns).Create(ctx, &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns},
@@ -100,7 +96,7 @@ func createSchedulablePod(t *testing.T, ctx context.Context, cs *fake.Clientset,
 	}
 }
 
-func waitForBinding(t *testing.T, ctx context.Context, cs *fake.Clientset, ns, name, expectNode string) {
+func waitForBinding(t *testing.T, ctx context.Context, cs kubernetes.Interface, ns, name, expectNode string) {
 	t.Helper()
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
