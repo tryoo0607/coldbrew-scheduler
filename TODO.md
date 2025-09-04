@@ -9,7 +9,7 @@
 
 (E) Error Handling 방식 고민하기 / Panic 구조 고려하기
 
-(F) Test 적용 방법 찾기
+(F) Test 적용 방법 찾기 {cm:2025-09-04}
 
 (G) Static Pod로 올려야하는지 찾아보기
 
