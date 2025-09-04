@@ -34,7 +34,7 @@ func NewPodInformer(ctx context.Context, clientset kubernetes.Interface, find ap
 		nodesProvider:    listNodesOnce,
 	}
 
-	options := c.buildInformerOptions()
+	options := c.buildPodInformerOptions()
 
 	_, controller := cache.NewInformerWithOptions(options)
 
@@ -49,19 +49,19 @@ func listNodesOnce(ctx context.Context, cs kubernetes.Interface) ([]api.NodeInfo
 	return adapter.ToNodeInfoList(nl)
 }
 
-func (c *Controller) buildInformerOptions() cache.InformerOptions {
+func (c *Controller) buildPodInformerOptions() cache.InformerOptions {
 	lw := c.newListerWatcher(c.clientset)
 	return cache.InformerOptions{
 		ListerWatcher: lw,
 		ObjectType:    &corev1.Pod{},
 		ResyncPeriod:  0,
 		Handler: cache.ResourceEventHandlerFuncs{
-			AddFunc: c.onAdd,
+			AddFunc: c.onPodAdded,
 		},
 	}
 }
 
-func (c *Controller) onAdd(obj interface{}) {
+func (c *Controller) onPodAdded(obj interface{}) {
 	pod, ok := obj.(*corev1.Pod)
 	if !ok {
 		return
