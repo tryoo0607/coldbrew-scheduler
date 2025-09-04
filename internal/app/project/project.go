@@ -29,7 +29,7 @@ func Run(ctx context.Context, options ProjectOptions) error {
 	g, ctx := errgroup.WithContext(ctx)
 
 	g.Go(func() error {
-
+		
 		return scheduler.Run(ctx, client, finder.FindBestNode)
 	})
 

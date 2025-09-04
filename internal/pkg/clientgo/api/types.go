@@ -24,4 +24,4 @@ type PodInfo struct {
 	MemoryBytes     int64
 }
 
-type FinderFunc func(PodInfo) (string, error)
+type FinderFunc func([]NodeInfo, PodInfo) (string, error)
