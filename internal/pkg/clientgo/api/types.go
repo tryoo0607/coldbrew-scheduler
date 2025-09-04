@@ -1,6 +1,8 @@
 package api
 
 import (
+	"context"
+
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -24,4 +26,4 @@ type PodInfo struct {
 	MemoryBytes     int64
 }
 
-type FinderFunc func([]NodeInfo, PodInfo) (string, error)
+type FinderFunc func(context.Context, PodInfo, []NodeInfo) (string, error)

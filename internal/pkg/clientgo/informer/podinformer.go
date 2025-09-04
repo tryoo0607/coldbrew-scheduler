@@ -84,7 +84,7 @@ func (c *Controller) schedulePod(pod *corev1.Pod) {
 		return
 	}
 
-	node, err := c.find(candidates, pi)
+	node, err := c.find(c.ctx, pi, candidates)
 	if err != nil {
 		fmt.Printf("findBestNode error for %s/%s: %v\n", pod.Namespace, pod.Name, err)
 		return
