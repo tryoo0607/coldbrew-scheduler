@@ -37,6 +37,7 @@ func ToNodeInfo(n *corev1.Node) (api.NodeInfo, error) {
 		AllocatableCPUMilli: cpuMilli,
 		AllocatableMemBytes: memBytes,
 		Ready:               ready,
+		Unschedulable:       n.Spec.Unschedulable,
 	}, nil
 }
 

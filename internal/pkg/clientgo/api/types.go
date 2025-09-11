@@ -14,6 +14,7 @@ type NodeInfo struct {
 	AllocatableCPUMilli int64
 	AllocatableMemBytes int64
 	Ready               bool
+	Unschedulable       bool
 }
 
 type PodInfo struct {
@@ -21,13 +22,13 @@ type PodInfo struct {
 	Namespace       string
 	Labels          map[string]string
 	Annotations     map[string]string
+	NodeName        string
 	NodeSelector    map[string]string
-	Tolerations    []Toleration
+	Tolerations     []Toleration
 	CPUmilliRequest int64
 	MemoryBytes     int64
 }
 
-// Toleration 구조체 (corev1.Toleration에서 필요한 필드만 정의)
 type Toleration struct {
 	Key      string
 	Operator string
