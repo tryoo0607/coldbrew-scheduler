@@ -24,9 +24,44 @@ type PodInfo struct {
 	Annotations     map[string]string
 	NodeName        string
 	NodeSelector    map[string]string
+	NodeAffinity    *NodeAffinity
+	PodAffinity     *PodAffinity
+	PodAntiAffinity *PodAntiAffinity
 	Tolerations     []Toleration
 	CPUmilliRequest int64
 	MemoryBytes     int64
+}
+
+type Requirement struct {
+	Key      string   // 라벨 키
+	Operator string   // In, NotIn, Exists, DoesNotExist, Gt, Lt
+	Values   []string // 연산자가 In, NotIn일 때만 사용
+}
+
+type AffinityTerm struct {
+	Requirements []Requirement // AND 조건
+}
+
+type NodeAffinityTerm = AffinityTerm
+
+type PodAffinityTerm struct {
+	AffinityTerm
+	TopologyKey string
+}
+
+type NodeAffinity struct {
+	Required  []NodeAffinityTerm
+	Preferred []NodeAffinityTerm
+}
+
+type PodAffinity struct {
+	Required  []PodAffinityTerm
+	Preferred []PodAffinityTerm
+}
+
+type PodAntiAffinity struct {
+	Required  []PodAffinityTerm
+	Preferred []PodAffinityTerm
 }
 
 type Toleration struct {
