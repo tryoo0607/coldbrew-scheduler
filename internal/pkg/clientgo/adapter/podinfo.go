@@ -7,6 +7,19 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+// corev1.Toleration → api.Toleration 변환 메서드
+func toTolerations(k8sTolerations []corev1.Toleration) []api.Toleration {
+	tolerations := make([]api.Toleration, 0, len(k8sTolerations))
+	for _, t := range k8sTolerations {
+		tolerations = append(tolerations, api.Toleration{
+			Key:      t.Key,
+			Operator: string(t.Operator),
+			Value:    t.Value,
+			Effect:   string(t.Effect),
+		})
+	}
+	return tolerations
+}
 
 func ToPodInfo(pod *corev1.Pod) (api.PodInfo, error) {
 	if pod == nil {
@@ -32,6 +45,7 @@ func ToPodInfo(pod *corev1.Pod) (api.PodInfo, error) {
 		Labels:          pod.Labels,
 		Annotations:     pod.Annotations,
 		NodeSelector:    pod.Spec.NodeSelector,
+		Tolerations:     toTolerations(pod.Spec.Tolerations),
 		CPUmilliRequest: cpuMilli,
 		MemoryBytes:     memBytes,
 	}
