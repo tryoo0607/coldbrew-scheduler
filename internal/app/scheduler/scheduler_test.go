@@ -5,12 +5,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/tryoo0607/coldbrew-scheduler/internal/app/finder"
 	"github.com/tryoo0607/coldbrew-scheduler/internal/app/scheduler"
 	"github.com/tryoo0607/coldbrew-scheduler/internal/pkg/clientgo"
 	"github.com/tryoo0607/coldbrew-scheduler/internal/pkg/clientgo/api"
 	clientk8s "github.com/tryoo0607/coldbrew-scheduler/internal/pkg/clientgo/k8s"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -22,33 +24,10 @@ func TestSchedulerBindsPod(t *testing.T) {
 	// 2) 컨텍스트 & 파인더
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	// find := func(ctx context.Context, pod api.PodInfo, nodes []api.NodeInfo, allPods []api.PodInfo) (string, error) {
-	// 	// 테스트니까 단순히 FilterNodes 호출
-	// 	candidates, err := scheduler.FilterNodes(pod, nodes, allPods)
-	// 	if err != nil {
-	// 		return "", err
-	// 	}
-	// 	if len(candidates) == 0 {
-	// 		return "", fmt.Errorf("no candidates for pod %s/%s", pod.Namespace, pod.Name)
-	// 	}
-
-	// 	// 가장 점수가 높은 노드를 선택했다고 가정
-	// 	best := candidates[0]
-	// 	for _, n := range candidates {
-	// 		if n.Score > best.Score {
-	// 			best = n
-	// 		}
-	// 	}
-	// 	return best.Name, nil
-	// }
-
-	find := func(ctx context.Context, pod api.PodInfo, nodes []api.NodeInfo, allPods []api.PodInfo) (string, error) {
-		return "node-a", nil
-	}
 
 	// 3) 스케줄러 실행
 	t.Log("→ start scheduler")
-	errCh := startScheduler(ctx, cli, find)
+	errCh := startScheduler(ctx, cli, finder.FindBestNode)
 
 	// 4) 테스트 리소스 준비
 	t.Log("→ ensure node")
@@ -93,11 +72,27 @@ func startScheduler(
 // 리소스 생성/검증 유틸은 그대로 사용
 func ensureNode(t *testing.T, ctx context.Context, cs kubernetes.Interface, name string) {
 	t.Helper()
-	_, err := cs.CoreV1().Nodes().Create(ctx, &corev1.Node{
+	n, err := cs.CoreV1().Nodes().Create(ctx, &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{Name: name},
+		Spec:       corev1.NodeSpec{}, // 기본 스펙
 	}, metav1.CreateOptions{})
 	if err != nil && !isAlreadyExists(err) {
 		t.Fatalf("create node %q: %v", name, err)
+	}
+
+	// Ready condition 세팅
+	n.Status.Allocatable = corev1.ResourceList{
+		corev1.ResourceCPU:    resource.MustParse("1000m"),
+		corev1.ResourceMemory: resource.MustParse("1Gi"),
+	}
+	n.Status.Conditions = []corev1.NodeCondition{{
+		Type:   corev1.NodeReady,
+		Status: corev1.ConditionTrue,
+	}}
+
+	_, err = cs.CoreV1().Nodes().UpdateStatus(ctx, n, metav1.UpdateOptions{})
+	if err != nil {
+		t.Fatalf("update node status %q: %v", name, err)
 	}
 }
 
