@@ -1,8 +1,8 @@
-// internal/app/scheduler/scheduler_test.go
 package scheduler_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -23,8 +23,24 @@ func TestSchedulerBindsPod(t *testing.T) {
 	// 2) 컨텍스트 & 파인더
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	find := func(ctx context.Context, _ api.PodInfo, _ []api.NodeInfo) (string, error) {
-		return "node-a", nil
+	find := func(ctx context.Context, pod api.PodInfo, nodes []api.NodeInfo, allPods []api.PodInfo) (string, error) {
+		// 테스트니까 단순히 FilterNodes 호출
+		candidates, err := scheduler.FilterNodes(pod, nodes, allPods)
+		if err != nil {
+			return "", err
+		}
+		if len(candidates) == 0 {
+			return "", fmt.Errorf("no candidates for pod %s/%s", pod.Namespace, pod.Name)
+		}
+
+		// 가장 점수가 높은 노드를 선택했다고 가정
+		best := candidates[0]
+		for _, n := range candidates {
+			if n.Score > best.Score {
+				best = n
+			}
+		}
+		return best.Name, nil
 	}
 
 	// 3) 스케줄러 실행
