@@ -24,6 +24,22 @@ func ToPodInfo(pod *corev1.Pod) (api.PodInfo, error) {
 		}
 	}
 
+	// --- Affinity nil-safe 변환 ---
+	var nodeAffinity *api.NodeAffinity
+	var podAffinity *api.PodAffinity
+	var podAntiAffinity *api.PodAntiAffinity
+	if pod.Spec.Affinity != nil {
+		if pod.Spec.Affinity.NodeAffinity != nil {
+			nodeAffinity = toNodeAffinity(pod.Spec.Affinity.NodeAffinity)
+		}
+		if pod.Spec.Affinity.PodAffinity != nil {
+			podAffinity = toPodAffinity(pod.Spec.Affinity.PodAffinity)
+		}
+		if pod.Spec.Affinity.PodAntiAffinity != nil {
+			podAntiAffinity = toPodAntiAffinity(pod.Spec.Affinity.PodAntiAffinity)
+		}
+	}
+
 	podInfo := api.PodInfo{
 		Namespace:       pod.Namespace,
 		Name:            pod.Name,
@@ -31,9 +47,9 @@ func ToPodInfo(pod *corev1.Pod) (api.PodInfo, error) {
 		Annotations:     pod.Annotations,
 		NodeName:        pod.Spec.NodeName,
 		NodeSelector:    pod.Spec.NodeSelector,
-		NodeAffinity:    toNodeAffinity(pod.Spec.Affinity.NodeAffinity),
-		PodAffinity:     toPodAffinity(pod.Spec.Affinity.PodAffinity),
-		PodAntiAffinity: toPodAntiAffinity(pod.Spec.Affinity.PodAntiAffinity),
+		NodeAffinity:    nodeAffinity,
+		PodAffinity:     podAffinity,
+		PodAntiAffinity: podAntiAffinity,
 		Tolerations:     toTolerations(pod.Spec.Tolerations),
 		CPUmilliRequest: cpuMilli,
 		MemoryBytes:     memBytes,
