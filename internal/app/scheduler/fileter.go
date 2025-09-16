@@ -28,7 +28,10 @@ func FilterNodes(podInfo api.PodInfo, listNodeInfos []api.NodeInfo) ([]*api.Node
 	}
 
 	// 4. Node Affinity 맞는 Node 필터링
-	// TODO. [TR-YOO] 구현하기
+	nodeAffinityNodes, err := findNodesByNodeAffinity(podInfo, selectedNodes)
+	if err != nil {
+		return nil, fmt.Errorf("nodeAffinity check failed: %w", err)
+	}
 
 	// 5. Pod Affinity 맞는 Node 필터링
 	// TODO. [TR-YOO] 구현하기
@@ -39,7 +42,7 @@ func FilterNodes(podInfo api.PodInfo, listNodeInfos []api.NodeInfo) ([]*api.Node
 	// 7. 리소스 충분한지 검사
 	// TODO. [TR-YOO] 구현하기
 
-	return selectedNodes, nil
+	return nodeAffinityNodes, nil
 }
 
 func findNodesByReady(listNodeInfos []api.NodeInfo) ([]*api.NodeInfo, error) {
@@ -110,7 +113,29 @@ func findNodesByNodeSelector(nodeSelector map[string]string, listNodeInfos []*ap
 	return filteredListNodeInfos, nil
 }
 
-func hasKeyValue(m map[string]string, key, value string) bool {
-	v, ok := m[key]
-	return ok && v == value
+func findNodesByNodeAffinity(pod api.PodInfo, nodes []*api.NodeInfo) ([]*api.NodeInfo, error) {
+	if pod.NodeAffinity == nil {
+		return nodes, nil
+	}
+
+	results := make([]*api.NodeInfo, 0, len(nodes))
+
+	for _, node := range nodes {
+		labels := node.Labels
+
+		// 1) Required 조건 검사
+		if !matchRequiredNodeAffinity(labels, pod.NodeAffinity.Required) {
+			continue
+		}
+
+		// 2) Preferred 점수 계산
+		score := scorePreferredNodeAffinity(labels, pod.NodeAffinity.Preferred)
+
+		// 점수 반영
+		node.Score += score
+
+		results = append(results, node)
+	}
+
+	return results, nil
 }

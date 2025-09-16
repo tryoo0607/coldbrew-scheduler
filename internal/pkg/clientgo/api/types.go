@@ -6,6 +6,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+/*
+	Node, Pod 기본 정보
+*/
+
+// NodeInfo: 노드 상태 요약
 type NodeInfo struct {
 	Name                string
 	Labels              map[string]string
@@ -15,8 +20,10 @@ type NodeInfo struct {
 	AllocatableMemBytes int64
 	Ready               bool
 	Unschedulable       bool
+	Score               int
 }
 
+// PodInfo: 파드 스펙 요약
 type PodInfo struct {
 	Name            string
 	Namespace       string
@@ -32,37 +39,80 @@ type PodInfo struct {
 	MemoryBytes     int64
 }
 
+/*
+	Affinity / Toleration 표현
+*/
+
+type Operator string
+
+const (
+	OpIn           Operator = "In"
+	OpNotIn        Operator = "NotIn"
+	OpExists       Operator = "Exists"
+	OpDoesNotExist Operator = "DoesNotExist"
+	OpGt           Operator = "Gt"
+	OpLt           Operator = "Lt"
+)
+
+// Requirement: 라벨 매칭 조건
 type Requirement struct {
-	Key      string   // 라벨 키
-	Operator string   // In, NotIn, Exists, DoesNotExist, Gt, Lt
-	Values   []string // 연산자가 In, NotIn일 때만 사용
+	Key      string // 라벨 키
+	Operator Operator
+	Values   []string // In, NotIn일 때만 사용
 }
 
+// AffinityTerm: 공통 조건 (AND 연결)
 type AffinityTerm struct {
-	Requirements []Requirement // AND 조건
+	Requirements []Requirement
 }
 
+// NodeAffinityTerm는 단순히 Requirement 집합
 type NodeAffinityTerm = AffinityTerm
 
+// PodAffinityTerm: 파드 매칭 조건 + topologyKey
 type PodAffinityTerm struct {
 	AffinityTerm
 	TopologyKey string
 }
 
+/*
+	NodeAffinity
+*/
+
+// WeightedNodeAffinityTerm: NodeAffinityTerm + Weight
+type WeightedNodeAffinityTerm struct {
+	AffinityTerm
+	Weight int // 1~100, Kubernetes 스펙 반영
+}
+
 type NodeAffinity struct {
 	Required  []NodeAffinityTerm
-	Preferred []NodeAffinityTerm
+	Preferred []WeightedNodeAffinityTerm
+}
+
+/*
+	PodAffinity / PodAntiAffinity
+*/
+
+// WeightedPodAffinityTerm: PodAffinityTerm + Weight
+type WeightedPodAffinityTerm struct {
+	PodAffinityTerm
+	Weight int
 }
 
 type PodAffinity struct {
 	Required  []PodAffinityTerm
-	Preferred []PodAffinityTerm
+	Preferred []WeightedPodAffinityTerm
 }
 
 type PodAntiAffinity struct {
 	Required  []PodAffinityTerm
-	Preferred []PodAffinityTerm
+	Preferred []WeightedPodAffinityTerm
 }
+
+/*
+	Toleration
+*/
 
 type Toleration struct {
 	Key      string
@@ -71,4 +121,9 @@ type Toleration struct {
 	Effect   string
 }
 
+/*
+	Scheduler Finder 함수 시그니처
+*/
+
+// FinderFunc: Pod와 Node 리스트를 받아 스케줄링 대상 노드명 결정
 type FinderFunc func(context.Context, PodInfo, []NodeInfo) (string, error)

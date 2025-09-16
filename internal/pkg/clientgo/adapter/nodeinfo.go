@@ -33,11 +33,13 @@ func ToNodeInfo(n *corev1.Node) (api.NodeInfo, error) {
 	return api.NodeInfo{
 		Name:                n.Name,
 		Labels:              n.Labels,
+		Annotations:         n.Annotations,
 		Taints:              n.Spec.Taints,
 		AllocatableCPUMilli: cpuMilli,
 		AllocatableMemBytes: memBytes,
 		Ready:               ready,
 		Unschedulable:       n.Spec.Unschedulable,
+		Score:               0,
 	}, nil
 }
 

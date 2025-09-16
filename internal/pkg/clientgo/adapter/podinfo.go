@@ -17,7 +17,6 @@ func ToPodInfo(pod *corev1.Pod) (api.PodInfo, error) {
 	var memBytes int64
 	for _, c := range pod.Spec.Containers {
 		if q, ok := c.Resources.Requests[corev1.ResourceCPU]; ok {
-			// CPU는 milli로 변환
 			cpuMilli += q.MilliValue()
 		}
 		if q, ok := c.Resources.Requests[corev1.ResourceMemory]; ok {
@@ -50,25 +49,20 @@ func toNodeAffinity(na *corev1.NodeAffinity) *api.NodeAffinity {
 
 	result := &api.NodeAffinity{}
 
+	// Required
 	if na.RequiredDuringSchedulingIgnoredDuringExecution != nil {
 		for _, term := range na.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms {
-			reqs := toRequirements(term.MatchExpressions)
+			reqs := toRequirementsHelper(term.MatchExpressions)
 			if len(reqs) > 0 {
-				result.Required = append(result.Required, api.AffinityTerm{
+				result.Required = append(result.Required, api.NodeAffinityTerm{
 					Requirements: reqs,
 				})
 			}
 		}
 	}
 
-	for _, pref := range na.PreferredDuringSchedulingIgnoredDuringExecution {
-		reqs := toRequirements(pref.Preference.MatchExpressions)
-		if len(reqs) > 0 {
-			result.Preferred = append(result.Preferred, api.AffinityTerm{
-				Requirements: reqs,
-			})
-		}
-	}
+	// Preferred (weight 반영 → 헬퍼 사용)
+	result.Preferred = toWeightedNodeAffinityTerms(na.PreferredDuringSchedulingIgnoredDuringExecution)
 
 	return result
 }
@@ -77,11 +71,13 @@ func toPodAffinity(pa *corev1.PodAffinity) *api.PodAffinity {
 	if pa == nil {
 		return nil
 	}
+
+	required := toPodAffinityTermsHelper(pa.RequiredDuringSchedulingIgnoredDuringExecution)
+	preferred := toWeightedPodAffinityTerms(pa.PreferredDuringSchedulingIgnoredDuringExecution)
+
 	return &api.PodAffinity{
-		Required: toPodAffinityTerms(pa.RequiredDuringSchedulingIgnoredDuringExecution),
-		Preferred: toPodAffinityTerms(
-			extractPreferredTerms(pa.PreferredDuringSchedulingIgnoredDuringExecution),
-		),
+		Required:  required,
+		Preferred: preferred,
 	}
 }
 
@@ -89,11 +85,13 @@ func toPodAntiAffinity(pa *corev1.PodAntiAffinity) *api.PodAntiAffinity {
 	if pa == nil {
 		return nil
 	}
+
+	required := toPodAffinityTermsHelper(pa.RequiredDuringSchedulingIgnoredDuringExecution)
+	preferred := toWeightedPodAffinityTerms(pa.PreferredDuringSchedulingIgnoredDuringExecution)
+
 	return &api.PodAntiAffinity{
-		Required: toPodAffinityTerms(pa.RequiredDuringSchedulingIgnoredDuringExecution),
-		Preferred: toPodAffinityTerms(
-			extractPreferredTerms(pa.PreferredDuringSchedulingIgnoredDuringExecution),
-		),
+		Required:  required,
+		Preferred: preferred,
 	}
 }
 
