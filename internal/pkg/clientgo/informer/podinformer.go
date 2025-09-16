@@ -10,31 +10,30 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	informers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
-	v1 "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
 type PodController struct {
-	ctx         context.Context
-	find        api.FinderFunc
-	podInformer informers.PodInformer
-	nodeLister  v1.NodeLister
-	clientset   kubernetes.Interface
+	ctx          context.Context
+	find         api.FinderFunc
+	podInformer  informers.PodInformer
+	nodeInformer informers.NodeInformer
+	clientset    kubernetes.Interface
 }
 
 func NewPodController(
 	ctx context.Context,
 	clientset kubernetes.Interface,
 	podInformer informers.PodInformer,
-	nodeLister v1.NodeLister,
+	nodeInformer informers.NodeInformer,
 	find api.FinderFunc,
 ) *PodController {
 	c := &PodController{
-		ctx:         ctx,
-		clientset:   clientset,
-		find:        find,
-		podInformer: podInformer,
-		nodeLister:  nodeLister,
+		ctx:          ctx,
+		clientset:    clientset,
+		find:         find,
+		podInformer:  podInformer,
+		nodeInformer: nodeInformer,
 	}
 
 	podInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -45,8 +44,23 @@ func NewPodController(
 }
 
 func (c *PodController) Run(stopCh <-chan struct{}) {
+	go c.podInformer.Informer().Run(stopCh)
+	go c.nodeInformer.Informer().Run(stopCh)
 
-	c.podInformer.Informer().Run(stopCh)
+	// 캐시 동기화 대기
+	if !cache.WaitForCacheSync(stopCh,
+		c.podInformer.Informer().HasSynced,
+		c.nodeInformer.Informer().HasSynced,
+	) {
+		// 실패 시 로그 출력이나 에러 핸들링 가능
+		fmt.Println("✗ Informer cache sync failed")
+		return
+	}
+
+	fmt.Println("✓ Informer cache synced")
+
+	// block (테스트 환경이라면 <-stopCh만 해도 됨)
+	<-stopCh
 }
 
 func (c *PodController) onPodAdded(obj interface{}) {

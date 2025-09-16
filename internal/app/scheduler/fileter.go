@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/tryoo0607/coldbrew-scheduler/internal/pkg/clientgo/api"
 )
@@ -54,22 +55,35 @@ func FilterNodes(targetPodInfo api.PodInfo, listNodeInfos []api.NodeInfo, allPod
 }
 
 func findNodesByReady(listNodeInfos []api.NodeInfo) ([]*api.NodeInfo, error) {
-	filteredListNodeInfos := make([]*api.NodeInfo, 0, len(listNodeInfos))
+	// 첫 시도
+	readyNodes := filterReadyNodes(listNodeInfos)
 
-	for i := range listNodeInfos {
-
-		ready := listNodeInfos[i].Ready
-
-		if ready {
-			filteredListNodeInfos = append(filteredListNodeInfos, &listNodeInfos[i])
-		}
+	if len(readyNodes) > 0 {
+		return readyNodes, nil
 	}
 
-	if len(filteredListNodeInfos) == 0 {
+	// 재시도 전 로그 및 대기
+	fmt.Println("[filter] no Ready nodes found, retrying after 500ms...")
+	time.Sleep(500 * time.Millisecond)
+
+	// 재시도
+	readyNodes = filterReadyNodes(listNodeInfos)
+
+	if len(readyNodes) == 0 {
 		return nil, fmt.Errorf("no Ready nodes found (all nodes are NotReady)")
 	}
 
-	return filteredListNodeInfos, nil
+	return readyNodes, nil
+}
+
+func filterReadyNodes(listNodeInfos []api.NodeInfo) []*api.NodeInfo {
+	filteredList := make([]*api.NodeInfo, 0, len(listNodeInfos))
+	for i := range listNodeInfos {
+		if listNodeInfos[i].Ready {
+			filteredList = append(filteredList, &listNodeInfos[i])
+		}
+	}
+	return filteredList
 }
 
 func findNodesByUnschedulable(listNodeInfos []*api.NodeInfo) ([]*api.NodeInfo, error) {

@@ -36,7 +36,7 @@ func FindBestNode(ctx context.Context, targetPodInfo api.PodInfo, listNodeInfos 
 		return "", fmt.Errorf("failed to score nodes for pod %q: %w", targetPodInfo.Name, err)
 	}
 
-	// 5. 최고 점수 노드 선택 단계
+	// 4. 최고 점수 노드 선택 단계
 	targetNode, err := findBestScoreNode(scoredNodes)
 
 	if err != nil {
@@ -93,6 +93,15 @@ func findNodeByName(nodeName string, listNodeInfos []api.NodeInfo) (*api.NodeInf
 }
 
 func findBestScoreNode(listNodeInfos []*api.NodeInfo) (string, error) {
+	if len(listNodeInfos) == 0 {
+		return "", fmt.Errorf("no nodes available")
+	}
 
-	return "", nil
+	best := listNodeInfos[0]
+	for _, n := range listNodeInfos {
+		if n.Score > best.Score {
+			best = n
+		}
+	}
+	return best.Name, nil
 }

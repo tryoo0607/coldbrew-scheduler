@@ -50,7 +50,7 @@ func (c *client) NewPodController(ctx context.Context, find api.FinderFunc) (Con
 		ctx,
 		c.cs,
 		podInformer,
-		nodeInformer.Lister(),
+		nodeInformer,
 		find,
 	)
 

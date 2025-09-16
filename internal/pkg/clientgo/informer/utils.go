@@ -11,7 +11,7 @@ import (
 
 func listNodeInfos(c *PodController, allPodInfos []api.PodInfo) ([]api.NodeInfo, error) {
 	// 캐시에서 node 목록 가져오기
-	nodes, err := c.nodeLister.List(labels.Everything())
+	nodes, err := c.nodeInformer.Lister().List(labels.Everything())
 	if err != nil {
 		return nil, fmt.Errorf("list nodes error : %v", err)
 	}
