@@ -46,9 +46,12 @@ func FilterNodes(targetPodInfo api.PodInfo, listNodeInfos []api.NodeInfo, allPod
 	}
 
 	// 7. 리소스 충분한지 검사
-	// TODO. [TR-YOO] 구현하기
+	resourceFilteredNodes, err := findNodesByResources(targetPodInfo, podAntiAffinityNodes, allPodInfos)
+	if err != nil {
+		return nil, fmt.Errorf("resource check failed: %w", err)
+	}
 
-	return podAntiAffinityNodes, nil
+	return resourceFilteredNodes, nil
 }
 
 func findNodesByReady(listNodeInfos []api.NodeInfo) ([]*api.NodeInfo, error) {
@@ -173,27 +176,48 @@ func findNodesByPodAffinity(pod api.PodInfo, nodes []*api.NodeInfo, allPodInfos 
 }
 
 func findNodesByPodAntiAffinity(pod api.PodInfo, nodes []*api.NodeInfo, allPodInfos []api.PodInfo) ([]*api.NodeInfo, error) {
-    // anti-affinity 없는 경우 그대로 리턴
-    if pod.PodAntiAffinity == nil {
-        return nodes, nil
-    }
+	// anti-affinity 없는 경우 그대로 리턴
+	if pod.PodAntiAffinity == nil {
+		return nodes, nil
+	}
 
-    results := make([]*api.NodeInfo, 0, len(nodes))
+	results := make([]*api.NodeInfo, 0, len(nodes))
 
-    for _, node := range nodes {
-        // 1) Required 조건 검사
-        if !matchRequiredPodAntiAffinity(pod, *node, pod.PodAntiAffinity.Required, allPodInfos) {
-            continue
-        }
+	for _, node := range nodes {
+		// 1) Required 조건 검사
+		if !matchRequiredPodAntiAffinity(pod, *node, pod.PodAntiAffinity.Required, allPodInfos) {
+			continue
+		}
 
-        // 2) Preferred 점수 계산
-        score := scorePreferredPodAntiAffinity(pod, *node, pod.PodAntiAffinity.Preferred, allPodInfos)
+		// 2) Preferred 점수 계산
+		score := scorePreferredPodAntiAffinity(pod, *node, pod.PodAntiAffinity.Preferred, allPodInfos)
 
-        // 점수 반영 (AntiAffinity는 weight가 높을수록 불리하게 적용할 수도 있음 → 정책에 따라 조정)
-        node.Score += score
+		// 점수 반영 (AntiAffinity는 weight가 높을수록 불리하게 적용할 수도 있음 → 정책에 따라 조정)
+		node.Score += score
 
-        results = append(results, node)
-    }
+		results = append(results, node)
+	}
 
-    return results, nil
+	return results, nil
+}
+
+func findNodesByResources(pod api.PodInfo, nodes []*api.NodeInfo, allPods []api.PodInfo) ([]*api.NodeInfo, error) {
+	results := make([]*api.NodeInfo, 0, len(nodes))
+
+	for _, node := range nodes {
+		usedCPU, usedMem := calcNodeUsedResources(node.Name, allPods)
+
+		totalCPU := usedCPU + pod.CPUmilliRequest
+		totalMem := usedMem + pod.MemoryBytes
+
+		if totalCPU <= node.AllocatableCPUMilli && totalMem <= node.AllocatableMemBytes {
+			results = append(results, node)
+		}
+	}
+
+	if len(results) == 0 {
+		return nil, fmt.Errorf("no nodes have enough resources for pod %s/%s", pod.Namespace, pod.Name)
+	}
+
+	return results, nil
 }

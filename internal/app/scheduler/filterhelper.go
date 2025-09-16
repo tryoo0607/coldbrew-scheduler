@@ -7,16 +7,16 @@ import (
 )
 
 /*
-공통 유틸 함수
-*/
+ * 공통 유틸 함수
+ */
 func hasKeyValue(m map[string]string, key, value string) bool {
 	v, ok := m[key]
 	return ok && v == value
 }
 
 /*
-	NodeAffinity 처리
-*/
+ * NodeAffinity 처리
+ */
 
 // NodeAffinity.Required 검사
 func matchRequiredNodeAffinity(labels map[string]string, required []api.NodeAffinityTerm) bool {
@@ -54,8 +54,8 @@ func matchNodeAffinityTerm(labels map[string]string, term api.NodeAffinityTerm) 
 }
 
 /*
-	PodAffinity 처리
-*/
+ * PodAffinity 처리
+ */
 
 // PodAffinity.Required 검사
 func matchRequiredPodAffinity(pod api.PodInfo, node api.NodeInfo, required []api.PodAffinityTerm, allPodInfos []api.PodInfo) bool {
@@ -79,8 +79,8 @@ func scorePreferredPodAffinity(pod api.PodInfo, node api.NodeInfo, prefs []api.W
 }
 
 /*
-	PodAntiAffinity 처리
-*/
+ * PodAntiAffinity 처리
+ */
 
 // PodAntiAffinity.Required 검사
 func matchRequiredPodAntiAffinity(pod api.PodInfo, node api.NodeInfo, required []api.PodAffinityTerm, allPodInfos []api.PodInfo) bool {
@@ -106,8 +106,8 @@ func scorePreferredPodAntiAffinity(pod api.PodInfo, node api.NodeInfo, prefs []a
 }
 
 /*
-	PodAffinity / PodAntiAffinity 공통 헬퍼
-*/
+ * PodAffinity / PodAntiAffinity 공통 헬퍼
+ */
 
 // PodAffinityTerm 검사
 func matchPodAffinityTerm(pod api.PodInfo, node api.NodeInfo, term api.PodAffinityTerm, allPodInfos []api.PodInfo) bool {
@@ -153,8 +153,29 @@ func matchTopologyKey(pod api.PodInfo, existingPod api.PodInfo, key string) bool
 }
 
 /*
-Requirement 매칭 처리 (In, NotIn, Exists, Gt, Lt 등)
-*/
+ * Resource 계산용 Helper
+ */
+func calcNodeUsedResources(nodeName string, allPods []api.PodInfo) (cpuMilli int64, memBytes int64) {
+	nodePods := make([]api.PodInfo, 0)
+	for _, p := range allPods {
+		if p.NodeName == nodeName {
+			nodePods = append(nodePods, p)
+		}
+	}
+	return sumPodRequests(nodePods)
+}
+
+func sumPodRequests(pods []api.PodInfo) (cpuMilli int64, memBytes int64) {
+	for _, p := range pods {
+		cpuMilli += p.CPUmilliRequest
+		memBytes += p.MemoryBytes
+	}
+	return
+}
+
+/*
+ * Requirement 매칭 처리 (In, NotIn, Exists, Gt, Lt 등)
+ */
 func matchRequirement(labels map[string]string, req api.Requirement) bool {
 	val, exists := labels[req.Key]
 
