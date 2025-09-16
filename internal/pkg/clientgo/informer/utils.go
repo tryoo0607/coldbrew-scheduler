@@ -9,7 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 )
 
-func listNodeInfos(c *PodController) ([]api.NodeInfo, error) {
+func listNodeInfos(c *PodController, allPodInfos []api.PodInfo) ([]api.NodeInfo, error) {
 	// 캐시에서 node 목록 가져오기
 	nodes, err := c.nodeLister.List(labels.Everything())
 	if err != nil {
@@ -23,7 +23,7 @@ func listNodeInfos(c *PodController) ([]api.NodeInfo, error) {
 	}
 
 	// []corev1.Node → []api.NodeInfo 로 변환
-	candidates, err := adapter.ToNodeInfoList(&nodeList)
+	candidates, err := adapter.ToNodeInfoList(&nodeList, allPodInfos)
 	if err != nil {
 		return nil, fmt.Errorf("convert to NodeInfoList error: %v", err)
 	}

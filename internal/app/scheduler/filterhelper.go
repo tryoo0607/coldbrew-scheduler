@@ -6,17 +6,15 @@ import (
 	"github.com/tryoo0607/coldbrew-scheduler/internal/pkg/clientgo/api"
 )
 
-/*
- * 공통 유틸 함수
- */
+/* --- 공통 유틸 --- */
+
+// Map에 key=value 존재 여부 확인
 func hasKeyValue(m map[string]string, key, value string) bool {
 	v, ok := m[key]
 	return ok && v == value
 }
 
-/*
- * NodeAffinity 처리
- */
+/* --- NodeAffinity 처리 --- */
 
 // NodeAffinity.Required 검사
 func matchRequiredNodeAffinity(labels map[string]string, required []api.NodeAffinityTerm) bool {
@@ -53,9 +51,7 @@ func matchNodeAffinityTerm(labels map[string]string, term api.NodeAffinityTerm) 
 	return true
 }
 
-/*
- * PodAffinity 처리
- */
+/* --- PodAffinity 처리 --- */
 
 // PodAffinity.Required 검사
 func matchRequiredPodAffinity(pod api.PodInfo, node api.NodeInfo, required []api.PodAffinityTerm, allPodInfos []api.PodInfo) bool {
@@ -78,9 +74,7 @@ func scorePreferredPodAffinity(pod api.PodInfo, node api.NodeInfo, prefs []api.W
 	return score
 }
 
-/*
- * PodAntiAffinity 처리
- */
+/* --- PodAntiAffinity 처리 --- */
 
 // PodAntiAffinity.Required 검사
 func matchRequiredPodAntiAffinity(pod api.PodInfo, node api.NodeInfo, required []api.PodAffinityTerm, allPodInfos []api.PodInfo) bool {
@@ -105,9 +99,7 @@ func scorePreferredPodAntiAffinity(pod api.PodInfo, node api.NodeInfo, prefs []a
 	return score
 }
 
-/*
- * PodAffinity / PodAntiAffinity 공통 헬퍼
- */
+/* --- PodAffinity / PodAntiAffinity 공통 헬퍼 --- */
 
 // PodAffinityTerm 검사
 func matchPodAffinityTerm(pod api.PodInfo, node api.NodeInfo, term api.PodAffinityTerm, allPodInfos []api.PodInfo) bool {
@@ -152,9 +144,9 @@ func matchTopologyKey(pod api.PodInfo, existingPod api.PodInfo, key string) bool
 	return ok1 && ok2 && val1 == val2
 }
 
-/*
- * Resource 계산용 Helper
- */
+/* --- Resource 계산 유틸 --- */
+
+// 특정 노드에 올라간 Pod들의 리소스 요청 합계
 func calcNodeUsedResources(nodeName string, allPods []api.PodInfo) (cpuMilli int64, memBytes int64) {
 	nodePods := make([]api.PodInfo, 0)
 	for _, p := range allPods {
@@ -165,6 +157,7 @@ func calcNodeUsedResources(nodeName string, allPods []api.PodInfo) (cpuMilli int
 	return sumPodRequests(nodePods)
 }
 
+// PodInfo 리스트의 리소스 요청 합계
 func sumPodRequests(pods []api.PodInfo) (cpuMilli int64, memBytes int64) {
 	for _, p := range pods {
 		cpuMilli += p.CPUmilliRequest
@@ -173,9 +166,9 @@ func sumPodRequests(pods []api.PodInfo) (cpuMilli int64, memBytes int64) {
 	return
 }
 
-/*
- * Requirement 매칭 처리 (In, NotIn, Exists, Gt, Lt 등)
- */
+/* --- Requirement 매칭 처리 (In, NotIn, Exists, Gt, Lt 등) --- */
+
+// Requirement 매칭
 func matchRequirement(labels map[string]string, req api.Requirement) bool {
 	val, exists := labels[req.Key]
 

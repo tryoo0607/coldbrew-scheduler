@@ -63,28 +63,28 @@ func (c *PodController) onPodAdded(obj interface{}) {
 }
 
 func (c *PodController) schedulePod(pod *corev1.Pod) {
-
-	candidates, err := listNodeInfos(c)
-
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	pi, err := adapter.ToPodInfo(pod)
-
-	if err != nil {
-		fmt.Printf("Convert Pod to PodInfo error for %s/%s: %v\n", pod.Namespace, pod.Name, err)
-		return
-	}
-
+	// 1. 전체 PodInfos 수집
 	allPodInfos, err := listPodInfos(c)
-
 	if err != nil {
 		fmt.Printf("listPodInfos error: %v\n", err)
 		return
 	}
 
+	// 2. NodeInfos 변환 (allPods 포함)
+	candidates, err := listNodeInfos(c, allPodInfos)
+	if err != nil {
+		fmt.Printf("listNodeInfos error: %v\n", err)
+		return
+	}
+
+	// 3. 현재 스케줄링 대상 Pod 변환
+	pi, err := adapter.ToPodInfo(pod)
+	if err != nil {
+		fmt.Printf("Convert Pod to PodInfo error for %s/%s: %v\n", pod.Namespace, pod.Name, err)
+		return
+	}
+
+	// 4. Finder로 최적 노드 선택
 	nodeName, err := c.find(c.ctx, pi, candidates, allPodInfos)
 	if err != nil {
 		fmt.Printf("findBestNode error for %s/%s: %v\n", pod.Namespace, pod.Name, err)
@@ -94,6 +94,7 @@ func (c *PodController) schedulePod(pod *corev1.Pod) {
 		return
 	}
 
+	// 5. 바인딩
 	if err := binder.BindPodToNode(binder.BindOptions{
 		ClientSet: c.clientset,
 		Ctx:       c.ctx,

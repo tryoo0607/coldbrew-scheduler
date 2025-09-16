@@ -7,6 +7,26 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+/* --- Pod 변환 유틸 --- */
+
+// PodList → []PodInfo
+func ToPodInfoList(pl *corev1.PodList) ([]api.PodInfo, error) {
+	if pl == nil {
+		return nil, fmt.Errorf("podList is nil")
+	}
+
+	out := make([]api.PodInfo, 0, len(pl.Items))
+	for i := range pl.Items {
+		pi, err := ToPodInfo(&pl.Items[i])
+		if err != nil {
+			return nil, fmt.Errorf("convert pod %s/%s: %w", pl.Items[i].Namespace, pl.Items[i].Name, err)
+		}
+		out = append(out, pi)
+	}
+	return out, nil
+}
+
+// Pod → PodInfo
 func ToPodInfo(pod *corev1.Pod) (api.PodInfo, error) {
 	if pod == nil {
 		return api.PodInfo{}, fmt.Errorf("pod is nil")
@@ -58,6 +78,8 @@ func ToPodInfo(pod *corev1.Pod) (api.PodInfo, error) {
 	return podInfo, nil
 }
 
+/* --- NodeAffinity 변환 --- */
+
 func toNodeAffinity(na *corev1.NodeAffinity) *api.NodeAffinity {
 	if na == nil {
 		return nil
@@ -68,7 +90,7 @@ func toNodeAffinity(na *corev1.NodeAffinity) *api.NodeAffinity {
 	// Required
 	if na.RequiredDuringSchedulingIgnoredDuringExecution != nil {
 		for _, term := range na.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms {
-			reqs := toRequirementsHelper(term.MatchExpressions)
+			reqs := toRequirements(term.MatchExpressions)
 			if len(reqs) > 0 {
 				result.Required = append(result.Required, api.NodeAffinityTerm{
 					Requirements: reqs,
@@ -78,18 +100,20 @@ func toNodeAffinity(na *corev1.NodeAffinity) *api.NodeAffinity {
 	}
 
 	// Preferred (weight 반영 → 헬퍼 사용)
-	result.Preferred = toWeightedNodeAffinityTerms(na.PreferredDuringSchedulingIgnoredDuringExecution)
+	result.Preferred = toWeightedNodeAffinity(na.PreferredDuringSchedulingIgnoredDuringExecution)
 
 	return result
 }
+
+/* --- PodAffinity 변환 --- */
 
 func toPodAffinity(pa *corev1.PodAffinity) *api.PodAffinity {
 	if pa == nil {
 		return nil
 	}
 
-	required := toPodAffinityTermsHelper(pa.RequiredDuringSchedulingIgnoredDuringExecution)
-	preferred := toWeightedPodAffinityTerms(pa.PreferredDuringSchedulingIgnoredDuringExecution)
+	required := toPodAffinityTerms(pa.RequiredDuringSchedulingIgnoredDuringExecution)
+	preferred := toWeightedPodAffinity(pa.PreferredDuringSchedulingIgnoredDuringExecution)
 
 	return &api.PodAffinity{
 		Required:  required,
@@ -97,19 +121,23 @@ func toPodAffinity(pa *corev1.PodAffinity) *api.PodAffinity {
 	}
 }
 
+/* --- PodAntiAffinity 변환 --- */
+
 func toPodAntiAffinity(pa *corev1.PodAntiAffinity) *api.PodAntiAffinity {
 	if pa == nil {
 		return nil
 	}
 
-	required := toPodAffinityTermsHelper(pa.RequiredDuringSchedulingIgnoredDuringExecution)
-	preferred := toWeightedPodAffinityTerms(pa.PreferredDuringSchedulingIgnoredDuringExecution)
+	required := toPodAffinityTerms(pa.RequiredDuringSchedulingIgnoredDuringExecution)
+	preferred := toWeightedPodAffinity(pa.PreferredDuringSchedulingIgnoredDuringExecution)
 
 	return &api.PodAntiAffinity{
 		Required:  required,
 		Preferred: preferred,
 	}
 }
+
+/* --- Toleration 변환 --- */
 
 func toTolerations(k8sTolerations []corev1.Toleration) []api.Toleration {
 	tolerations := make([]api.Toleration, 0, len(k8sTolerations))

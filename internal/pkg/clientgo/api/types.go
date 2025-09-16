@@ -6,9 +6,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-/*
-	Node, Pod 기본 정보
-*/
+/* --- Node / Pod 기본 정보 --- */
 
 // NodeInfo: 노드 상태 요약
 type NodeInfo struct {
@@ -18,6 +16,8 @@ type NodeInfo struct {
 	Taints              []corev1.Taint
 	AllocatableCPUMilli int64
 	AllocatableMemBytes int64
+	UsedCPUMilli        int64
+	UsedMemBytes        int64
 	Ready               bool
 	Unschedulable       bool
 	Score               int
@@ -39,9 +39,7 @@ type PodInfo struct {
 	MemoryBytes     int64
 }
 
-/*
-	Affinity / Toleration 표현
-*/
+/* --- Affinity / Toleration 표현 --- */
 
 type Operator string
 
@@ -56,8 +54,8 @@ const (
 
 // Requirement: 라벨 매칭 조건
 type Requirement struct {
-	Key      string // 라벨 키
-	Operator Operator
+	Key      string   // 라벨 키
+	Operator Operator // 연산자 (In, NotIn, Exists 등)
 	Values   []string // In, NotIn일 때만 사용
 }
 
@@ -66,7 +64,7 @@ type AffinityTerm struct {
 	Requirements []Requirement
 }
 
-// NodeAffinityTerm는 단순히 Requirement 집합
+// NodeAffinityTerm: 단순히 Requirement 집합
 type NodeAffinityTerm = AffinityTerm
 
 // PodAffinityTerm: 파드 매칭 조건 + topologyKey
@@ -75,9 +73,7 @@ type PodAffinityTerm struct {
 	TopologyKey string
 }
 
-/*
-	NodeAffinity
-*/
+/* --- NodeAffinity --- */
 
 // WeightedNodeAffinityTerm: NodeAffinityTerm + Weight
 type WeightedNodeAffinityTerm struct {
@@ -90,9 +86,7 @@ type NodeAffinity struct {
 	Preferred []WeightedNodeAffinityTerm
 }
 
-/*
-	PodAffinity / PodAntiAffinity
-*/
+/* --- PodAffinity / PodAntiAffinity --- */
 
 // WeightedPodAffinityTerm: PodAffinityTerm + Weight
 type WeightedPodAffinityTerm struct {
@@ -110,9 +104,7 @@ type PodAntiAffinity struct {
 	Preferred []WeightedPodAffinityTerm
 }
 
-/*
-	Toleration
-*/
+/* --- Toleration --- */
 
 type Toleration struct {
 	Key      string
@@ -121,9 +113,7 @@ type Toleration struct {
 	Effect   string
 }
 
-/*
-	Scheduler Finder 함수 시그니처
-*/
+/* --- Scheduler Finder 함수 시그니처 --- */
 
 // FinderFunc: Pod와 Node 리스트를 받아 스케줄링 대상 노드명 결정
 type FinderFunc func(context.Context, PodInfo, []NodeInfo, []PodInfo) (string, error)
