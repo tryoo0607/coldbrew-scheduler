@@ -6,7 +6,6 @@ import (
 	"github.com/tryoo0607/coldbrew-scheduler/internal/pkg/clientgo/api"
 )
 
-// TODO. [TR-YOO] requset / limit 적용하기
 func FilterNodes(targetPodInfo api.PodInfo, listNodeInfos []api.NodeInfo, allPodInfos []api.PodInfo) ([]*api.NodeInfo, error) {
 
 	// 1. Node Ready 상태 검사
