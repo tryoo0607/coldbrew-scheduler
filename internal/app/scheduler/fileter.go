@@ -7,7 +7,7 @@ import (
 )
 
 // TODO. [TR-YOO] requset / limit 적용하기
-func FilterNodes(podInfo api.PodInfo, listNodeInfos []api.NodeInfo) ([]*api.NodeInfo, error) {
+func FilterNodes(targetPodInfo api.PodInfo, listNodeInfos []api.NodeInfo, allPodInfos []api.PodInfo) ([]*api.NodeInfo, error) {
 
 	// 1. Node Ready 상태 검사
 	readyNodes, err := findNodesByReady(listNodeInfos)
@@ -22,27 +22,33 @@ func FilterNodes(podInfo api.PodInfo, listNodeInfos []api.NodeInfo) ([]*api.Node
 	}
 
 	// 3. NodeSelector에 맞는 Node 필터링
-	selectedNodes, err := findNodesByNodeSelector(podInfo.NodeSelector, schedulableNodes)
+	selectedNodes, err := findNodesByNodeSelector(targetPodInfo.NodeSelector, schedulableNodes)
 	if err != nil {
 		return nil, fmt.Errorf("nodeSelector check failed: %w", err)
 	}
 
 	// 4. Node Affinity 맞는 Node 필터링
-	nodeAffinityNodes, err := findNodesByNodeAffinity(podInfo, selectedNodes)
+	nodeAffinityNodes, err := findNodesByNodeAffinity(targetPodInfo, selectedNodes)
 	if err != nil {
 		return nil, fmt.Errorf("nodeAffinity check failed: %w", err)
 	}
 
 	// 5. Pod Affinity 맞는 Node 필터링
-	// TODO. [TR-YOO] 구현하기
+	podAffinityNodes, err := findNodesByPodAffinity(targetPodInfo, nodeAffinityNodes, allPodInfos)
+	if err != nil {
+		return nil, fmt.Errorf("podAffinity check failed: %w", err)
+	}
 
 	// 6. Pod AntiAffinity 맞는 Node 필터링
-	// TODO. [TR-YOO] 구현하기
+	podAntiAffinityNodes, err := findNodesByPodAntiAffinity(targetPodInfo, podAffinityNodes, allPodInfos)
+	if err != nil {
+		return nil, fmt.Errorf("podAntiAffinity check failed: %w", err)
+	}
 
 	// 7. 리소스 충분한지 검사
 	// TODO. [TR-YOO] 구현하기
 
-	return nodeAffinityNodes, nil
+	return podAntiAffinityNodes, nil
 }
 
 func findNodesByReady(listNodeInfos []api.NodeInfo) ([]*api.NodeInfo, error) {
@@ -138,4 +144,56 @@ func findNodesByNodeAffinity(pod api.PodInfo, nodes []*api.NodeInfo) ([]*api.Nod
 	}
 
 	return results, nil
+}
+
+func findNodesByPodAffinity(pod api.PodInfo, nodes []*api.NodeInfo, allPodInfos []api.PodInfo) ([]*api.NodeInfo, error) {
+	// affinity 없는 경우 그대로 리턴
+	if pod.PodAffinity == nil {
+		return nodes, nil
+	}
+
+	results := make([]*api.NodeInfo, 0, len(nodes))
+
+	for _, node := range nodes {
+		// 1) Required 조건 검사
+		if !matchRequiredPodAffinity(pod, *node, pod.PodAffinity.Required, allPodInfos) {
+			continue
+		}
+
+		// 2) Preferred 점수 계산
+		score := scorePreferredPodAffinity(pod, *node, pod.PodAffinity.Preferred, allPodInfos)
+
+		// 점수 반영
+		node.Score += score
+
+		results = append(results, node)
+	}
+
+	return results, nil
+}
+
+func findNodesByPodAntiAffinity(pod api.PodInfo, nodes []*api.NodeInfo, allPodInfos []api.PodInfo) ([]*api.NodeInfo, error) {
+    // anti-affinity 없는 경우 그대로 리턴
+    if pod.PodAntiAffinity == nil {
+        return nodes, nil
+    }
+
+    results := make([]*api.NodeInfo, 0, len(nodes))
+
+    for _, node := range nodes {
+        // 1) Required 조건 검사
+        if !matchRequiredPodAntiAffinity(pod, *node, pod.PodAntiAffinity.Required, allPodInfos) {
+            continue
+        }
+
+        // 2) Preferred 점수 계산
+        score := scorePreferredPodAntiAffinity(pod, *node, pod.PodAntiAffinity.Preferred, allPodInfos)
+
+        // 점수 반영 (AntiAffinity는 weight가 높을수록 불리하게 적용할 수도 있음 → 정책에 따라 조정)
+        node.Score += score
+
+        results = append(results, node)
+    }
+
+    return results, nil
 }

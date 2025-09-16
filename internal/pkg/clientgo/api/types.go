@@ -126,4 +126,4 @@ type Toleration struct {
 */
 
 // FinderFunc: Pod와 Node 리스트를 받아 스케줄링 대상 노드명 결정
-type FinderFunc func(context.Context, PodInfo, []NodeInfo) (string, error)
+type FinderFunc func(context.Context, PodInfo, []NodeInfo, []PodInfo) (string, error)

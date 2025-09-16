@@ -8,11 +8,11 @@ import (
 	"github.com/tryoo0607/coldbrew-scheduler/internal/pkg/clientgo/api"
 )
 
-func FindBestNode(ctx context.Context, podInfo api.PodInfo, listNodeInfos []api.NodeInfo) (string, error) {
+func FindBestNode(ctx context.Context, targetPodInfo api.PodInfo, listNodeInfos []api.NodeInfo, allPodInfos []api.PodInfo) (string, error) {
 
 	// 1. nodeName 우선 적용
-	if podInfo.NodeName != "" {
-		nodeName, err := applyNodeName(podInfo, listNodeInfos)
+	if targetPodInfo.NodeName != "" {
+		nodeName, err := applyNodeName(targetPodInfo, listNodeInfos)
 
 		if err != nil {
 			return "", err
@@ -22,10 +22,10 @@ func FindBestNode(ctx context.Context, podInfo api.PodInfo, listNodeInfos []api.
 	}
 
 	// 2. 필터 단계 (Ready, Unschedulable, NodeSelector 등)
-	filteredNodes, err := scheduler.FilterNodes(podInfo, listNodeInfos)
+	filteredNodes, err := scheduler.FilterNodes(targetPodInfo, listNodeInfos, allPodInfos)
 
 	if err != nil {
-		return "", fmt.Errorf("failed to filter nodes for pod %q: %w", podInfo.Name, err)
+		return "", fmt.Errorf("failed to filter nodes for pod %q: %w", targetPodInfo.Name, err)
 	}
 
 	// 3. 스코어링 단계 (노드 점수 계산)
@@ -33,14 +33,14 @@ func FindBestNode(ctx context.Context, podInfo api.PodInfo, listNodeInfos []api.
 
 	if err != nil {
 
-		return "", fmt.Errorf("failed to score nodes for pod %q: %w", podInfo.Name, err)
+		return "", fmt.Errorf("failed to score nodes for pod %q: %w", targetPodInfo.Name, err)
 	}
 
 	// 5. 최고 점수 노드 선택 단계
 	targetNode, err := findBestScoreNode(scoredNodes)
 
 	if err != nil {
-		return "", fmt.Errorf("failed to select best node for pod %q: %w", podInfo.Name, err)
+		return "", fmt.Errorf("failed to select best node for pod %q: %w", targetPodInfo.Name, err)
 	}
 
 	return targetNode, nil

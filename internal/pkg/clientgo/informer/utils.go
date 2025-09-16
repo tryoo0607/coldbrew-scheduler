@@ -30,3 +30,21 @@ func listNodeInfos(c *PodController) ([]api.NodeInfo, error) {
 
 	return candidates, nil
 }
+
+func listPodInfos(c *PodController) ([]api.PodInfo, error) {
+	podList, err := c.podInformer.Lister().List(labels.Everything())
+	if err != nil {
+		return nil, fmt.Errorf("list pods: %w", err)
+	}
+
+	out := make([]api.PodInfo, 0, len(podList))
+	for _, pod := range podList {
+		pi, err := adapter.ToPodInfo(pod)
+		if err != nil {
+			fmt.Printf("convert pod %s/%s error: %v\n", pod.Namespace, pod.Name, err)
+			continue
+		}
+		out = append(out, pi)
+	}
+	return out, nil
+}
