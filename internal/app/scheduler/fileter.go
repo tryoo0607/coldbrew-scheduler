@@ -36,6 +36,9 @@ func FilterNodes(podInfo api.PodInfo, listNodeInfos []api.NodeInfo) ([]*api.Node
 	// 6. Pod AntiAffinity 맞는 Node 필터링
 	// TODO. [TR-YOO] 구현하기
 
+	// 7. 리소스 충분한지 검사
+	// TODO. [TR-YOO] 구현하기
+
 	return selectedNodes, nil
 }
 

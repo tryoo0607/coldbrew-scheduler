@@ -39,15 +39,19 @@ jobs:
             # type=raw,value=latest,enable={{is_default_branch}}
             # v* 태그 push 시, 그 태그명 그대로 사용 (예: v1.2.3)
             # type=ref,event=tag
-      - name: Build and push Docker image
-        id: push
-        uses: docker/build-push-action@3b5e8027fcad23fda98b2e3ac259d8d67585f671
-        with:
-          context: .
-          file: ./docker/Dockerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Build and push Docker image (via Makefile)
+        run: make docker-push TAGS="${{ steps.meta.outputs.tags }}"
+
+      #- name: Build and push Docker image
+      #  id: push
+      #  uses: docker/build-push-action@3b5e8027fcad23fda98b2e3ac259d8d67585f671
+      #  with:
+      #    context: .
+      #    file: ./docker/Dockerfile
+      #    push: true
+      #    tags: ${{ steps.meta.outputs.tags }}
+      #    labels: ${{ steps.meta.outputs.labels }}
       # - name: Generate artifact attestation
       #   uses: actions/attest-build-provenance@v2
       #   with:
