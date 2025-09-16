@@ -11,9 +11,9 @@ func Run(ctx context.Context, client clientgo.Client, find api.FinderFunc) error
 
 	controller, err := client.NewPodController(ctx, find)
 
-    if err != nil {
-        return err
-    }
+	if err != nil {
+		return err
+	}
 
 	stop := make(chan struct{})
 
